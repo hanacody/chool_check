@@ -74,31 +74,41 @@ class _MyHomePageState extends State<MyHomePage> {
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.title),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.my_location),
+            onPressed: _getCurrentLocation,
+          ),
+        ],
       ),
-      body: GoogleMap(
-        onMapCreated: _onMapCreated,
-        initialCameraPosition: CameraPosition(
-          target: _currentPosition,
-          zoom: 17.0,
-        ),
-        mapType: MapType.normal,
-        markers: {
-          Marker(
-            markerId: const MarkerId('currentLocation'),
-            position: _currentPosition,
+      body: Stack(
+        children: [
+          GoogleMap(
+            onMapCreated: _onMapCreated,
+            initialCameraPosition: CameraPosition(
+              target: _currentPosition,
+              zoom: 17.0,
+            ),
+            mapType: MapType.normal,
+            markers: {
+              Marker(
+                markerId: const MarkerId('currentLocation'),
+                position: _currentPosition,
+              ),
+            },
+            zoomControlsEnabled: false,
+            circles: {
+              Circle(
+                circleId: const CircleId('currentLocationCircle'),
+                center: _currentPosition,
+                radius: 100,
+                fillColor: Colors.blue.withOpacity(0.2),
+                strokeColor: Colors.blue,
+                strokeWidth: 2,
+              ),
+            },
           ),
-        },
-        zoomControlsEnabled: false,
-        circles: {
-          Circle(
-            circleId: const CircleId('currentLocationCircle'),
-            center: _currentPosition,
-            radius: 100,
-            fillColor: Colors.blue.withOpacity(0.2),
-            strokeColor: Colors.blue,
-            strokeWidth: 2,
-          ),
-        },
+        ],
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
