@@ -12,17 +12,19 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Chool Check',
+      title: '오늘도 출근',
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: const MyHomePage(),
+      home: const MyHomePage(title: '오늘도 출근'),
     );
   }
 }
 
 class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key});
+  const MyHomePage({super.key, required this.title});
+
+  final String title;
 
   @override
   State<MyHomePage> createState() => _MyHomePageState();
@@ -53,18 +55,13 @@ class _MyHomePageState extends State<MyHomePage> {
     }
 
     try {
-      // Geolocator를 사용하여 현재 위치를 가져옵니다.
       Position position = await Geolocator.getCurrentPosition(
-        // 위치 설정을 구성합니다. 여기서는 높은 정확도를 요청합니다.
         locationSettings: const LocationSettings(
           accuracy: LocationAccuracy.high,
         ),
       );
-      // 상태를 업데이트합니다.
       setState(() {
-        // 현재 위치를 LatLng 객체로 변환하여 저장합니다.
         _currentPosition = LatLng(position.latitude, position.longitude);
-        // 지도 컨트롤러를 사용하여 카메라를 새로운 위치로 애니메이션합니다.
         mapController.animateCamera(CameraUpdate.newLatLng(_currentPosition));
       });
     } catch (e) {
@@ -75,18 +72,23 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        title: Text(widget.title),
+      ),
       body: GoogleMap(
         onMapCreated: _onMapCreated,
         initialCameraPosition: CameraPosition(
           target: _currentPosition,
-          zoom: 18.0,
+          zoom: 17.0,
         ),
+        mapType: MapType.normal,
         markers: {
           Marker(
             markerId: const MarkerId('currentLocation'),
             position: _currentPosition,
           ),
         },
+        zoomControlsEnabled: false,
         circles: {
           Circle(
             circleId: const CircleId('currentLocationCircle'),
@@ -98,6 +100,96 @@ class _MyHomePageState extends State<MyHomePage> {
           ),
         },
       ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () {
+          _checkIn(context);
+        },
+        label: const Text('출근하기'),
+        icon: const Icon(Icons.work),
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
     );
+  }
+
+  Future<void> _checkIn(BuildContext context) async {
+    try {
+      LocationSettings locationSettings = const LocationSettings(
+        accuracy: LocationAccuracy.high,
+      );
+      Position currentPosition = await Geolocator.getCurrentPosition(
+        locationSettings: locationSettings,
+      );
+
+      LatLng companyLocation = const LatLng(37.4979, 127.0276);
+
+      double distanceInMeters = Geolocator.distanceBetween(
+        currentPosition.latitude,
+        currentPosition.longitude,
+        companyLocation.latitude,
+        companyLocation.longitude,
+      );
+
+      if (distanceInMeters >= 100) {
+        if (context.mounted) {
+          showDialog(
+            context: context,
+            builder: (BuildContext context) {
+              return AlertDialog(
+                title: const Text('출근 완료'),
+                content: const Text('출근이 완료되었습니다!'),
+                actions: <Widget>[
+                  TextButton(
+                    child: const Text('확인'),
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                    },
+                  ),
+                ],
+              );
+            },
+          );
+        }
+      } else {
+        if (context.mounted) {
+          showDialog(
+            context: context,
+            builder: (BuildContext context) {
+              return AlertDialog(
+                title: const Text('출근 실패'),
+                content: const Text('회사 근처에서만 출근할 수 있습니다.'),
+                actions: <Widget>[
+                  TextButton(
+                    child: const Text('확인'),
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                    },
+                  ),
+                ],
+              );
+            },
+          );
+        }
+      }
+    } catch (e) {
+      if (context.mounted) {
+        showDialog(
+          context: context,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              title: const Text('오류'),
+              content: Text('출근 처리 중 오류 발생: $e'),
+              actions: <Widget>[
+                TextButton(
+                  child: const Text('확인'),
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                ),
+              ],
+            );
+          },
+        );
+      }
+    }
   }
 }
